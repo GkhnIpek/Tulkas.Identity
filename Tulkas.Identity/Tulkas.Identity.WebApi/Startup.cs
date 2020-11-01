@@ -58,6 +58,7 @@ namespace Tulkas.Identity.WebApi
                 options.LogoutPath = new PathString("/Member/Logout");
                 options.Cookie = cookieBuilder;
                 options.SlidingExpiration = true;
+                options.AccessDeniedPath = new PathString("/Member/AccessDenied");
             });
 
             services.AddMvc();

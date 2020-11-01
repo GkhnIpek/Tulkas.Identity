@@ -118,5 +118,10 @@ namespace Tulkas.Identity.WebApi.Controllers
         {
             _signInManager.SignOutAsync();
         }
+
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 }
