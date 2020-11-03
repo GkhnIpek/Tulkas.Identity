@@ -23,6 +23,11 @@ namespace Tulkas.Identity.WebApi.Controllers
             return View(_userManager.Users.ToList());
         }
 
+        public IActionResult Claims()
+        {
+            return View(User.Claims.ToList());
+        }
+
         public IActionResult Users()
         {
             return View(_userManager.Users.ToList());

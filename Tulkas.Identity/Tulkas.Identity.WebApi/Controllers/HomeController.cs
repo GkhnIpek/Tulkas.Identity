@@ -24,7 +24,6 @@ namespace Tulkas.Identity.WebApi.Controllers
             return View();
         }
 
-        [HttpGet]
         public IActionResult Login(string returnUrl)
         {
             TempData["ReturnUrl"] = returnUrl;
@@ -84,7 +83,6 @@ namespace Tulkas.Identity.WebApi.Controllers
             return View(userLogin);
         }
 
-        [HttpGet]
         public IActionResult SignUp()
         {
             return View();
@@ -115,7 +113,6 @@ namespace Tulkas.Identity.WebApi.Controllers
             return View(userViewModel);
         }
 
-        [HttpGet]
         public IActionResult ResetPassword()
         {
             return View();
