@@ -17,6 +17,7 @@
         <th>Id</th>
         <th>Rol İsmi</th>
         <th>Silme</th>
+        <th>Güncelleme</th>
     </tr>
 
     @foreach (var role in Model)
@@ -28,6 +29,9 @@
                 <form asp-action="RoleDelete" asp-route-id="@role.Id" method="post">
                     <button class="btn btn-danger" type="submit">Sil</button>
                 </form>
+            </td>
+            <td>
+                <a class="btn btn-success" asp-action="RoleUpdate" asp-route-id="@role.Id">Güncelleme</a>
             </td>
         </tr>
     }
