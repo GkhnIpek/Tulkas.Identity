@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using Microsoft.AspNetCore.Identity;
 using Tulkas.Identity.WebApi.CustomValidation;
 using Tulkas.Identity.WebApi.Models;
 
@@ -22,9 +24,29 @@ namespace Tulkas.Identity.WebApi
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<IAuthorizationHandler, ExpireDateExchangeHandler>();
+
             services.AddDbContext<AppIdentityDbContext>(opts =>
             {
                 opts.UseSqlServer(Configuration["ConnectionStrings:DefaultConnectionString"]);
+            });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("AnkaraPolicy", policy =>
+                {
+                    policy.RequireClaim("City", "Ankara");
+                });
+
+                options.AddPolicy("ViolencePolicy", policy =>
+                {
+                    policy.RequireClaim("Violence");
+                });
+
+                options.AddPolicy("ExchangePolicy", policy =>
+                {
+                    policy.AddRequirements(new ExpireDateExchangeRequirement());
+                });
             });
 
             services.AddIdentity<AppUser, AppRole>(options =>
@@ -60,6 +82,8 @@ namespace Tulkas.Identity.WebApi
                 options.SlidingExpiration = true;
                 options.AccessDeniedPath = new PathString("/Member/AccessDenied");
             });
+
+            services.AddScoped<IClaimsTransformation, ClaimProvider.ClaimProvider>();
 
             services.AddMvc();
         }
