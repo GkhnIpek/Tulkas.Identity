@@ -43,6 +43,12 @@ namespace Tulkas.Identity.WebApi.Controllers
                         ModelState.AddModelError("", "Hesabınız bir süreliğine kilitlenmiştir.Lütfen daha sonra tekrar deneyiniz.");
                         return View(userLogin);
                     }
+
+                    if (_userManager.IsEmailConfirmedAsync(user).Result == false)
+                    {
+                        ModelState.AddModelError("", "Email adresiniz onaylanmamıştır. Lütfen email adresinizi kontrol ediniz.");
+                        return View(userLogin);
+                    }
                     await _signInManager.SignOutAsync();
                     SignInResult result = await _signInManager.PasswordSignInAsync(user, userLogin.Password, userLogin.RememberMe, false);
                     if (result.Succeeded)
@@ -104,6 +110,15 @@ namespace Tulkas.Identity.WebApi.Controllers
 
                 if (result.Succeeded)
                 {
+                    string confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    string link = Url.Action("ConfirmEmail", "Home", new
+                    {
+                        userId = user.Id,
+                        token = confirmationToken
+                    }, protocol: HttpContext.Request.Scheme);
+
+                    Helper.EmailConfirmation.SendEmail(link, user.Email);
+
                     return RedirectToAction("Login");
                 }
 
@@ -131,7 +146,7 @@ namespace Tulkas.Identity.WebApi.Controllers
                     token = passwordResetToken
                 }, HttpContext.Request.Scheme);
 
-                Helper.PasswordReset.PasswordResetSendEmail(passwordResetLink);
+                Helper.PasswordReset.PasswordResetSendEmail(passwordResetLink,  user.Email);
 
                 ViewBag.Status = "successful";
             }
@@ -179,5 +194,21 @@ namespace Tulkas.Identity.WebApi.Controllers
             }
             return View(passwordResetViewModel);
         }
+
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            IdentityResult result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                ViewBag.Status = "Email adresiniz onaylanmıştır. Giriş yapabilirsiniz.";
+            }
+            else
+            {
+                ViewBag.Status = "Bir hata meydana geldi.Lütfen tekrar deneyiniz.";
+            }
+
+            return View();
+        } 
     }
 }
