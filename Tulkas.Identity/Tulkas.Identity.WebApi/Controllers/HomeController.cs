@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Tulkas.Identity.WebApi.Models;
 using Tulkas.Identity.WebApi.ViewModels;
@@ -146,7 +149,7 @@ namespace Tulkas.Identity.WebApi.Controllers
                     token = passwordResetToken
                 }, HttpContext.Request.Scheme);
 
-                Helper.PasswordReset.PasswordResetSendEmail(passwordResetLink,  user.Email);
+                Helper.PasswordReset.PasswordResetSendEmail(passwordResetLink, user.Email);
 
                 ViewBag.Status = "successful";
             }
@@ -209,6 +212,99 @@ namespace Tulkas.Identity.WebApi.Controllers
             }
 
             return View();
-        } 
+        }
+
+        public IActionResult FacebookLogin(string returnUrl)
+        {
+            string redirectUrl = Url.Action("ExternalResponse", "Home", new { returnUrl = returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Facebook", redirectUrl);
+            return new ChallengeResult("Facebook", properties);
+        }
+
+        public IActionResult GoogleLogin(string returnUrl)
+        {
+            string redirectUrl = Url.Action("ExternalResponse", "Home", new { returnUrl = returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+            return new ChallengeResult("Google", properties);
+        }
+
+        public IActionResult MicrosoftLogin(string returnUrl)
+        {
+            string redirectUrl = Url.Action("ExternalResponse", "Home", new { returnUrl = returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Microsoft", redirectUrl);
+            return new ChallengeResult("Microsoft", properties);
+        }
+
+        public async Task<IActionResult> ExternalResponse(string returnUrl = "/")
+        {
+            ExternalLoginInfo info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                return RedirectToAction("Login");
+            }
+            else
+            {
+                SignInResult result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, true);
+                if (result.Succeeded)
+                {
+                    return Redirect(returnUrl);
+                }
+                else
+                {
+                    AppUser user = new AppUser();
+                    user.Email = info.Principal.FindFirst(ClaimTypes.Email).Value;
+                    string externalUserId = info.Principal.FindFirst(ClaimTypes.NameIdentifier).Value;
+                    if (info.Principal.HasClaim(x => x.Type == ClaimTypes.Name))
+                    {
+                        string userName = info.Principal.FindFirst(ClaimTypes.Name).Value;
+                        userName = userName.Replace(" ", "-").ToLower() + externalUserId.Substring(0, 5).ToString();
+                        user.UserName = userName;
+                    }
+                    else
+                    {
+                        user.UserName = info.Principal.FindFirst(ClaimTypes.Email).Value;
+                    }
+
+                    AppUser existUser = await _userManager.FindByEmailAsync(user.Email);
+                    if (existUser == null)
+                    {
+                        IdentityResult createResult = await _userManager.CreateAsync(user);
+                        if (createResult.Succeeded)
+                        {
+                            IdentityResult loginResult = await _userManager.AddLoginAsync(user, info);
+                            if (loginResult.Succeeded)
+                            {
+                                //await _signInManager.SignInAsync(user, true);
+                                await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, true);
+                                return Redirect(returnUrl);
+                            }
+                            else
+                            {
+                                AddModelError(loginResult);
+                            }
+                        }
+                        else
+                        {
+                            AddModelError(createResult);
+                        }
+                    }
+                    else
+                    {
+                        IdentityResult loginResult = await _userManager.AddLoginAsync(existUser, info);
+                        await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, true);
+                        return Redirect(returnUrl);
+                    }
+                }
+            }
+
+            List<string> errors = ModelState.Values.SelectMany(x => x.Errors).Select(y => y.ErrorMessage).ToList();
+
+            return View("Error", errors);
+        }
+
+        public IActionResult Error()
+        {
+            return View();
+        }
     }
 }

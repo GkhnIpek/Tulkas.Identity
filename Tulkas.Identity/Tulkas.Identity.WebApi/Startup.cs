@@ -49,7 +49,21 @@ namespace Tulkas.Identity.WebApi
                 });
             });
 
-            services.AddIdentity<AppUser, AppRole>(options =>
+            services.AddAuthentication().AddFacebook(facebookOptions =>
+            {
+                facebookOptions.AppId = Configuration["Authentication:Facebook:AppId"];
+                facebookOptions.AppSecret = Configuration["Authentication:Facebook:AppSecret"];
+            }).AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = Configuration["Authentication:Google:ClientId"];
+                googleOptions.ClientSecret = Configuration["Authentication:Google:ClientSecret"];
+            }).AddMicrosoftAccount(microsoftOptions =>
+            {
+                microsoftOptions.ClientId = Configuration["Authentication:Microsoft:ClientSecret"];
+                microsoftOptions.ClientSecret = Configuration["Authentication:Microsoft:ClientSecret"];
+            });
+
+                services.AddIdentity<AppUser, AppRole>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.User.AllowedUserNameCharacters = "abcçdefgðhýijklmnopqrsþtuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";
