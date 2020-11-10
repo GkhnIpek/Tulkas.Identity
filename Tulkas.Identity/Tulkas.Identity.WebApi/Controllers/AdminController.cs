@@ -1,10 +1,10 @@
 ﻿using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Tulkas.Identity.WebApi.Models;
 using Tulkas.Identity.WebApi.ViewModels;
 
@@ -143,6 +143,25 @@ namespace Tulkas.Identity.WebApi.Controllers
                 }
             }
 
+            return RedirectToAction("Users");
+        }
+
+        public async Task<IActionResult> ResetUserPassword(string id)
+        {
+            AppUser user = await _userManager.FindByIdAsync(id);
+            PasswordResetByAdminViewModel passwordResetByAdminViewModel = new PasswordResetByAdminViewModel();
+            passwordResetByAdminViewModel.UserId = user.Id;
+
+            return View(passwordResetByAdminViewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetUserPassword(PasswordResetByAdminViewModel viewModel)
+        {
+            AppUser user = await _userManager.FindByIdAsync(viewModel.UserId);
+            string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            await _userManager.ResetPasswordAsync(user, token, viewModel.NewPassword);
+            await _userManager.UpdateSecurityStampAsync(user);
             return RedirectToAction("Users");
         }
     }
