@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Tulkas.Identity.WebApi.Enums;
@@ -50,6 +51,16 @@ namespace Tulkas.Identity.WebApi.Controllers
                     {
                         await userPicture.CopyToAsync(stream);
                         CurrentUser.Picture = "/img/" + fileName;
+                    }
+                }
+
+                string phone = _userManager.GetPhoneNumberAsync(CurrentUser).Result;
+                if (phone != userViewModel.PhoneNumber)
+                {
+                    if (_userManager.Users.Any(u => u.PhoneNumber == userViewModel.PhoneNumber))
+                    {
+                        ModelState.AddModelError("", "Bu telefon numarası başka üye tarafından kayıtlıdır.");
+                        return View(userViewModel);
                     }
                 }
 
